@@ -1,6 +1,6 @@
 CFLAGS = -std=c++2a -Wall -Wextra -Wshadow -pedantic -march=native
 
-HEADERS = avl_buf_sort.hpp
+HEADERS = avl_buf_sort.hpp rb_buf_sort.hpp st_buf_sort.hpp bv_buf_sort.hpp bf_buf_sort.hpp
 
 .PHONY: debug
 
@@ -10,6 +10,6 @@ buf_sort: buf_sort.cpp $(HEADERS)
 	g++ $(CFLAGS) -DNDEBUG -Ofast -o buf_sort buf_sort.cpp
 
 debug: buf_sort.cpp $(HEADERS)
-	g++ $(CFLAGS) -DDEBUG -g -o buf_sort buf_sort.cpp
+	g++ $(CFLAGS) -DDEBUG -O0 -g -o buf_sort buf_sort.cpp
 
 %.hpp:
