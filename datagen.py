@@ -7,7 +7,7 @@ def main(count, buf, output_type):
     for _ in range(count):
         for i in range(buf):
             if (output_type == "random"):
-                print(f"{r.randint(0, 2**14 - 1 - i)} {i}")
+                print(f"{r.randint(0, 2**14 - 1 - (buf - i))} {i}")
             if (output_type == "sorted"):
                 print(f"{i} {i}")
             if (output_type == "inverted"):

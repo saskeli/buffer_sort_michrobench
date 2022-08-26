@@ -1,15 +1,16 @@
 #include <iostream>
 #include <chrono>
 
+#include "util.hpp"
+
 #include "avl_buf_sort.hpp"
 #include "rb_buf_sort.hpp"
 #include "st_buf_sort.hpp"
 #include "bv_buf_sort.hpp"
 #include "bf_buf_sort.hpp"
+#include "block_buf_sort.hpp"
 
-typedef std::pair<uint32_t, uint32_t> B_type;
-
-const static uint16_t BUFFER_SIZE = 1024;
+const static uint16_t BUFFER_SIZE = 512;
 const static uint32_t LIST_SIZE = uint32_t(1) << 14;
 
 template<class DS>
@@ -21,19 +22,10 @@ double run_bench(B_type* buffer) {
     using std::chrono::microseconds;
 
     auto t1 = high_resolution_clock::now();
-    for (uint16_t i = 0; i < BUFFER_SIZE; i++) {
-        sorter.insert(buffer[i].first);
-        //std::cerr << buffer[i].first << ", " << buffer[i].second << " inserted" << std::endl;
-        //sorter.print();
-    }
-
-    auto b_it = sorter.begin();
-    auto e_it = sorter.end();
+    sorter.sort(buffer);
     auto t2 = high_resolution_clock::now();
-    //sorter.print();
-    while (b_it != e_it) {
-        std::cout << (*b_it).buffer_index << ", " << (*b_it).index << std::endl;
-        b_it++;
+    for (uint16_t i = 0; i < BUFFER_SIZE; i++) {
+        std::cout << buffer[i].first << ", " << buffer[i].second << std::endl;
     }
     return duration_cast<microseconds>(t2 - t1).count();
 }
@@ -47,8 +39,10 @@ double runner(uint64_t type, B_type* buffer) {
         return run_bench<S_tree<BUFFER_SIZE, LIST_SIZE>>(buffer);
     } else if (type == 3) {
         return run_bench<BV_sorter<BUFFER_SIZE, LIST_SIZE>>(buffer);
-    } else {
+    } else if (type == 4) {
         return run_bench<BF_sorter<BUFFER_SIZE, LIST_SIZE>>(buffer);
+    } else {
+        return run_bench<Block_sort<BUFFER_SIZE, LIST_SIZE>>(buffer);
     }
 }
 

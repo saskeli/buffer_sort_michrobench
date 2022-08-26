@@ -5,6 +5,7 @@
 #include <cassert>
 #include <iterator>
 
+#include "util.hpp"
 
 
 template <uint16_t size, uint32_t n>
@@ -13,52 +14,13 @@ class AVL_tree {
     struct AVL_node {
         uint32_t index;
         uint16_t offset;
+        uint16_t payload;
         uint16_t left_index;
         uint16_t right_index;
         uint16_t left_height;
         uint16_t right_height;
     };
 
-    class AVL_ref {
-      public:
-        const uint32_t index;
-        const uint16_t buffer_index;
-        AVL_ref(uint32_t i, uint16_t b_i) : index(i), buffer_index(b_i) {}
-    };
-
-    class AVL_iterator {
-      private:
-        const AVL_node* a_ptr;
-        uint16_t offset;
-      public:
-        AVL_iterator(const AVL_node* ptr, uint16_t location) {
-            a_ptr = ptr;
-            offset = location;
-        }
-
-        bool operator==(const AVL_iterator& rhs) const {
-            return (a_ptr == rhs.a_ptr) && (offset == rhs.offset);
-        }
-
-        bool operator!=(const AVL_iterator& rhs) const {
-            return !operator==(rhs);
-        }
-
-        AVL_ref operator*() const {
-            return AVL_ref(a_ptr[offset].index, offset);
-        }
-
-        AVL_iterator & operator++() {
-            offset++;
-            return *this;
-        }
-
-        AVL_iterator operator++(int) {
-            AVL_iterator clone(a_ptr, offset);
-            offset++;
-            return clone;
-        }
-    };
     inline static AVL_node nodes[size];
     uint16_t root;
     uint16_t elems;
@@ -66,9 +28,17 @@ class AVL_tree {
   public:
     AVL_tree(): root(0), elems(0) { }
 
-    void insert(uint32_t i) {
+    void sort(B_type* buffer) {
+        for (uint16_t i = 0; i < size; i++) {
+            insert(buffer[i].first, buffer[i].second);
+        }
+        uint16_t i = 0;
+        walk(root, i, buffer);
+    }
+
+    void insert(uint32_t i, uint16_t v) {
         uint16_t loc = elems;
-        nodes[elems++] = {i, 0, 0, 0, 0, 0};
+        nodes[elems++] = {i, 0, v, 0, 0, 0, 0};
         if (elems == 1) [[unlikely]] {
             return;
         }
@@ -79,15 +49,6 @@ class AVL_tree {
                 root = rotate_left(root);
             }
         }
-    }
-
-    AVL_iterator begin() {
-        walk(root);
-        return AVL_iterator(nodes, 0);
-    }
-
-    AVL_iterator end() const {
-        return AVL_iterator(nodes, elems);
     }
 
     void print() {
@@ -139,16 +100,18 @@ class AVL_tree {
         return std::abs(int(nd->left_height) - nd->right_height) > 1;
     }
 
-    void walk(uint16_t idx) {
+    void walk(uint16_t idx, uint16_t &i, B_type* buffer) {
         AVL_node* nd = nodes + idx;
         nd->index += nd->offset;
         nodes[nd->left_index].offset += nd->left_height ? nd->offset : 0;
         nodes[nd->right_index].offset += nd->right_height ? nd->offset : 0;
         if (nd->left_height) {
-            walk(nd->left_index);
+            walk(nd->left_index, i, buffer);
         }
+        buffer[i].first = nd->index;
+        buffer[i++].second = nd->payload;
         if (nd->right_height) {
-            walk(nd->right_index);
+            walk(nd->right_index, i, buffer);
         }
     }
 

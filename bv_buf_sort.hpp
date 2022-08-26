@@ -1,9 +1,12 @@
 #pragma once
 
+#include <algorithm>
 #include <iostream>
 #include <cstring>
 #include <immintrin.h>
 #include <bitset>
+
+#include "util.hpp"
 
 template<uint16_t buffer_size, uint32_t leaf_size>
 class BV_sorter {
@@ -17,68 +20,23 @@ class BV_sorter {
     static const constexpr uint32_t SMALL_BLOCK_COUNT = 8;
     static const constexpr uint32_t WORDS = leaf_size / WORD_BITS;
     static const constexpr uint32_t B_TREE_SIZE = BIG_BLOCK_COUNT + BIG_BLOCK_COUNT * SMALL_BLOCK_COUNT;
+
     inline static uint64_t data[WORDS];
     inline static uint16_t b_tree[B_TREE_SIZE];
-    inline static uint32_t items[buffer_size];
 
-    uint16_t elems;
     static_assert(leaf_size == 16384);
 
-    class BV_ref {
-      public:
-        const uint32_t index;
-        const uint16_t buffer_index;
-        BV_ref(uint32_t i, uint16_t b_i) : index(i), buffer_index(b_i) {}
-    };
-
-    class BV_iterator {
-      private:
-        const uint32_t* a_ptr;
-        uint16_t offset;
-      public:
-        BV_iterator(const uint32_t* ptr, uint16_t location) {
-            a_ptr = ptr;
-            offset = location;
-        }
-
-        bool operator==(const BV_iterator& rhs) const {
-            return (a_ptr == rhs.a_ptr) && (offset == rhs.offset);
-        }
-
-        bool operator!=(const BV_iterator& rhs) const {
-            return !operator==(rhs);
-        }
-
-        BV_ref operator*() const {
-            return BV_ref(a_ptr[offset], offset);
-        }
-
-        BV_iterator & operator++() {
-            offset++;
-            return *this;
-        }
-
-        BV_iterator operator++(int) {
-            BV_iterator clone(a_ptr, offset);
-            offset++;
-            return clone;
-        }
-    };
-
   public:
-    BV_sorter() : elems(0) {}
     
-    void insert(uint32_t v) {
-        items[elems++] = v;
-    }
-
-    BV_iterator begin() {
-        calculate_offsets();
-        return BV_iterator(items, 0);
-    }
-
-    BV_iterator end() {
-        return BV_iterator(items, elems);
+    void sort(B_type* buffer) {
+        memset(data, 0, WORDS * sizeof(uint64_t));
+        memset(b_tree, 0, B_TREE_SIZE * sizeof(uint16_t));
+        for (uint16_t i = buffer_size - 1; i < buffer_size; i--) {
+            //std::cerr << "updating " << items[i] << " at " << i << std::endl;
+            buffer[i].first += update(buffer[i].first);
+            //print();
+        }
+        std::sort(buffer, buffer + buffer_size);
     }
 
     void print(bool print_data = true) {
@@ -93,9 +51,6 @@ class BV_sorter {
             }
             std::cerr << BIG_BLOCK_SIZE * (i + 1) << std::endl;
         }
-        for (uint16_t i = 0; i < elems; i++) {
-            std::cerr << items[i] << " " << i << std::endl;
-        }
         if (print_data) {
             for (uint32_t i = 0; i < WORDS; i++) {
                 std::cerr << std::bitset<WORD_BITS>(data[i]) << " " << (i * WORD_BITS) << std::endl;
@@ -105,16 +60,7 @@ class BV_sorter {
     }
 
   private:
-    void calculate_offsets() {
-        memset(data, 0, WORDS * sizeof(uint64_t));
-        memset(b_tree, 0, B_TREE_SIZE * sizeof(uint16_t));
-        for (uint16_t i = elems - 1; i < elems; i--) {
-            //std::cerr << "updating " << items[i] << " at " << i << std::endl;
-            items[i] += update(items[i]);
-            //print();
-        }
-    }
-
+    
     uint16_t update(uint32_t v) {
         //std::cerr << "Before update:" << std::endl;
         //print(false);
@@ -126,7 +72,7 @@ class BV_sorter {
         for (uint16_t i = 0; i < BIG_BLOCK_COUNT; i++) {
             uint32_t b_zeros = BIG_BLOCK_SIZE - b_tree[i];
             bb_cum += b_zeros;
-            bool r = bb_cum < v;
+            bool r = bb_cum <= v;
             bb_i += r * 1;
             bb_offset += r * b_zeros; 
             cum_sum += r * b_tree[i];
@@ -145,7 +91,7 @@ class BV_sorter {
         for (uint16_t i = 0; i < SMALL_BLOCK_COUNT; i++) {
             uint32_t b_zeros = SMALL_BLOCK_SIZE - b_tree[block_offset + i]; 
             sb_cum += b_zeros;
-            bool r = sb_cum < v;
+            bool r = sb_cum <= v;
             sb_i += r * 1;
             sb_offset += r * b_zeros; 
             cum_sum += r * b_tree[block_offset + i];
@@ -165,7 +111,7 @@ class BV_sorter {
         for (uint16_t i = 0; i < SMALL_BLOCK_WORDS; i++) {
             uint32_t b_zeros = __builtin_popcountll(~data[block_offset + i]); 
             bv_cum += b_zeros;
-            bool r = bv_cum < v;
+            bool r = bv_cum <= v;
             bv_i += r * 1;
             bv_offset += r * b_zeros; 
             cum_sum += r * __builtin_popcountll(data[block_offset + i]);

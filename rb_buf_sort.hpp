@@ -3,6 +3,8 @@
 #include <iostream>
 #include <immintrin.h>
 
+#include "util.hpp"
+
 template<uint16_t size, uint32_t n>
 class RB_tree {
   private:
@@ -13,50 +15,10 @@ class RB_tree {
     struct RB_node {
         uint32_t index;
         uint16_t offset;
+        uint16_t payload;
         uint16_t left_index;
         uint16_t right_index;
         uint16_t meta;
-    };
-
-    class RB_ref {
-      public:
-        const uint32_t index;
-        const uint16_t buffer_index;
-        RB_ref(uint32_t i, uint16_t b_i) : index(i), buffer_index(b_i) {}
-    };
-
-    class RB_iterator {
-      private:
-        const RB_node* a_ptr;
-        uint16_t offset;
-      public:
-        RB_iterator(const RB_node* ptr, uint16_t location) {
-            a_ptr = ptr;
-            offset = location;
-        }
-
-        bool operator==(const RB_iterator& rhs) const {
-            return (a_ptr == rhs.a_ptr) && (offset == rhs.offset);
-        }
-
-        bool operator!=(const RB_iterator& rhs) const {
-            return !operator==(rhs);
-        }
-
-        RB_ref operator*() const {
-            return RB_ref(a_ptr[offset].index, offset);
-        }
-
-        RB_iterator & operator++() {
-            offset++;
-            return *this;
-        }
-
-        RB_iterator operator++(int) {
-            RB_iterator clone(a_ptr, offset);
-            offset++;
-            return clone;
-        }
     };
 
     inline static RB_node nodes[size];
@@ -66,13 +28,21 @@ class RB_tree {
   public:
     RB_tree(): root(0), elems(0) {}
 
-    void insert(uint32_t i) {
+    void sort(B_type* buffer) {
+        for (uint16_t i = 0; i < size; i++) {
+            insert(buffer[i].first, buffer[i].second);
+        }
+        uint16_t i = 0;
+        walk(root, i, buffer);
+    }
+
+    void insert(uint32_t i, u_int16_t v) {
         uint16_t loc = elems;
         if (elems == 0) [[unlikely]] {
-            nodes[elems++] = {i, 0, 0, 0, 0};
+            nodes[elems++] = {i, 0, v, 0, 0, 0};
             return;
         }
-        nodes[elems++] = {i, 0, 0, 0, RED};
+        nodes[elems++] = {i, 0, v, 0, 0, RED};
         int32_t res = increment(root, i, loc);
         if (res >= 0) {
             root = res;
@@ -80,15 +50,6 @@ class RB_tree {
         if (nodes[root].meta & RED) {
             nodes[root].meta ^= RED;
         }
-    }
-
-    RB_iterator begin() {
-        walk(root);
-        return RB_iterator(nodes, 0);
-    }
-
-    RB_iterator end() const {
-        return RB_iterator(nodes, elems);
     }
 
     void print() {
@@ -177,16 +138,18 @@ class RB_tree {
         }
     }
 
-    void walk(uint16_t idx) {
+    void walk(uint16_t idx, uint16_t &i, B_type* buffer) {
         RB_node* nd = nodes + idx;
         nd->index += nd->offset;
         if (nd->meta & LEFT) {
             nodes[nd->left_index].offset += nd->offset;
-            walk(nd->left_index);
+            walk(nd->left_index, i, buffer);
         }
+        buffer[i].first = nd->index;
+        buffer[i++].second = nd->payload;
         if (nd->meta & RIGHT) {
             nodes[nd->right_index].offset += nd->offset;
-            walk(nd->right_index);
+            walk(nd->right_index, i, buffer);
         }
     }
 

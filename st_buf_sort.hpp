@@ -1,78 +1,40 @@
 #pragma once
 
+#include <algorithm>
 #include <iostream>
 #include <immintrin.h>
 #include <cstring>
 #include <bitset>
+
+#include "util.hpp"
 
 template<uint16_t size, uint32_t n>
 class S_tree {
   private:
     static const constexpr uint64_t WORD_BITS = 64;
     static const constexpr uint64_t WORDS = n / WORD_BITS;
-    inline static uint32_t items[size];
     inline static uint64_t data[WORDS];
     inline static uint16_t segment_tree[WORDS];
 
     static_assert(__builtin_popcountll(n) == 1);
     static_assert(n > 64);
 
-    uint16_t elems;
-
-    class ST_ref {
-      public:
-        const uint32_t index;
-        const uint16_t buffer_index;
-        ST_ref(uint32_t i, uint16_t b_i) : index(i), buffer_index(b_i) {}
-    };
-
-    class ST_iterator {
-      private:
-        const uint32_t* a_ptr;
-        uint16_t offset;
-      public:
-        ST_iterator(const uint32_t* ptr, uint16_t location) {
-            a_ptr = ptr;
-            offset = location;
-        }
-
-        bool operator==(const ST_iterator& rhs) const {
-            return (a_ptr == rhs.a_ptr) && (offset == rhs.offset);
-        }
-
-        bool operator!=(const ST_iterator& rhs) const {
-            return !operator==(rhs);
-        }
-
-        ST_ref operator*() const {
-            return ST_ref(a_ptr[offset], offset);
-        }
-
-        ST_iterator & operator++() {
-            offset++;
-            return *this;
-        }
-
-        ST_iterator operator++(int) {
-            ST_iterator clone(a_ptr, offset);
-            offset++;
-            return clone;
-        }
-    };
   public:
-    S_tree() : elems(0) {}
-
-    void insert(uint32_t v) {
-        items[elems++] = v;
-    }
-
-    ST_iterator begin() {
-        calculate_offsets();
-        return ST_iterator(items, 0);
-    }
-
-    ST_iterator end() {
-        return ST_iterator(items, elems);
+    void sort(B_type* buffer) {
+        memset(data, 0, WORDS * sizeof(uint64_t));
+        memset(segment_tree, 0, WORDS * sizeof(uint16_t));
+        for (uint16_t i = size - 1; i < size; i--) {
+            //bool print_b = false;
+            //if (buffer[i].first == 16359) {
+            //    print();
+            //    print_b = true;
+            //}
+            buffer[i].first += update(buffer[i].first);
+            //if (print_b) {
+            //    print();
+            //}
+        }
+        std::sort(buffer, buffer + size);
     }
 
     void print() {
@@ -86,22 +48,9 @@ class S_tree {
         for (uint32_t i = 0; i < WORDS; i++) {
             std::cerr << std::bitset<64>(data[i]) << " " << i * 64 << std::endl;
         }
-        for (uint16_t i = 0; i < elems; i++) {
-            std::cout << items[i] << " " << i << std::endl;
-        }
     }
 
   private:
-
-    void calculate_offsets() {
-        memset(data, 0, WORDS * sizeof(uint64_t));
-        memset(segment_tree, 0, WORDS * sizeof(uint16_t));
-        for (uint16_t i = elems - 1; i < elems; i--) {
-            //std::cerr << "updating " << items[i] << " at " << i << std::endl;
-            items[i] += update(items[i]);
-            //print();
-        }
-    }
 
     uint32_t update(uint32_t index) {
         //std::cerr << "update(" << index << ")" << std::endl;
@@ -110,8 +59,8 @@ class S_tree {
         uint32_t cumulative_sum = 0;
         while (idx < WORDS) {
             uint32_t block_zeros = block_elems - segment_tree[idx];
-            //std::cerr << " Looking at " << idx << " with " << block_zeros << " zeros to the left" << std::endl;
-            if (block_zeros < index) {
+            //std::cerr << " Looking at " << idx << " with " << block_zeros << " zeros to the left <-> " << index << std::endl;
+            if (block_zeros <= index) {
                 //std::cerr << " Going right" << std::endl;
                 cumulative_sum += segment_tree[idx];
                 idx = 2 * idx + 1;
@@ -125,9 +74,14 @@ class S_tree {
             //std::cerr << " cumulative sum: " << cumulative_sum << std::endl;
         }
         uint32_t word_idx = idx - WORDS;
+        //std::cerr << "Word index " << word_idx << std::endl;
         uint16_t word_offset = 63 - __builtin_clzll(_pdep_u64(uint64_t(1) << index, ~data[word_idx]));
         uint64_t set_bit = uint64_t(1) << word_offset;
+        //std::cerr << "Want the " << index << "-th zero. Should be at index " << word_offset << std::endl;
+        //std::cerr << "  " << std::bitset<64>(data[word_idx]) << std::endl;
+        //std::cerr << "& " << std::bitset<64>(set_bit - 1) << std::endl;
         cumulative_sum += __builtin_popcountll(data[word_idx] & (set_bit - 1));
+        //std::cerr << " cumulative sum after word: " << cumulative_sum << std::endl;
         data[word_idx] |= set_bit;
         while (idx) {
             if ((idx & uint32_t(1)) == 0) {
