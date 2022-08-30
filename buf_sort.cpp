@@ -9,6 +9,7 @@
 #include "bv_buf_sort.hpp"
 #include "bf_buf_sort.hpp"
 #include "block_buf_sort.hpp"
+#include "merge_inversions.hpp"
 
 const static uint16_t BUFFER_SIZE = 512;
 const static uint32_t LIST_SIZE = uint32_t(1) << 14;
@@ -41,8 +42,10 @@ double runner(uint64_t type, B_type* buffer) {
         return run_bench<BV_sorter<BUFFER_SIZE, LIST_SIZE>>(buffer);
     } else if (type == 4) {
         return run_bench<BF_sorter<BUFFER_SIZE, LIST_SIZE>>(buffer);
-    } else {
+    } else if (type == 5) {
         return run_bench<Block_sort<BUFFER_SIZE, LIST_SIZE>>(buffer);
+    } else {
+        return run_bench<Merge_inversions<BUFFER_SIZE, LIST_SIZE>>(buffer);
     }
 }
 
