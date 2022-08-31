@@ -11,7 +11,7 @@
 #include "block_buf_sort.hpp"
 #include "merge_inversions.hpp"
 
-const static uint16_t BUFFER_SIZE = 512;
+const static uint16_t BUFFER_SIZE = 1024;
 const static uint32_t LIST_SIZE = uint32_t(1) << 14;
 
 template<class DS>
@@ -59,13 +59,15 @@ int main(int argc, char const *argv[])
     std::cin >> n;
 
     B_type buffer[BUFFER_SIZE];
-    double time = 0;
+    //double time = 0;
     for (uint32_t i = 0; i < n; i++) {
         std::cout << "run " << i << std::endl;
         for (uint16_t j = 0; j < BUFFER_SIZE; j++) {
             std::cin >> buffer[j].first >> buffer[j].second;
         }
-        time += runner(type, buffer);
+        double t = runner(type, buffer);
+        //time += t;
+        std::cerr << t << std::endl;
     }
-    std::cerr << "Mean time us: " << time / n << std::endl;
+    //std::cerr << "Mean time us: " << time / n << std::endl;
 }
