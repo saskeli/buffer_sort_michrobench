@@ -7,11 +7,11 @@ def main(count, buf, output_type):
     for _ in range(count):
         for i in range(buf):
             if (output_type == "random"):
-                print(f"{r.randint(0, 2**14 - 1 - (buf - i))} {i}")
+                print(f"{r.randint(0, 2**14 - 1 - (buf - i))} {r.randint(0, 1)}")
             if (output_type == "sorted"):
-                print(f"{i} {i}")
+                print(f"{i} {r.randint(0, 1)}")
             if (output_type == "inverted"):
-                print(f"{0} {i}")
+                print(f"{0} {r.randint(0, 1)}")
 
 if __name__ == "__main__":
     if (len(sys.argv) < 3):

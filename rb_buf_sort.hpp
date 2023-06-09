@@ -13,9 +13,8 @@ class RB_tree {
     static const constexpr uint16_t RIGHT = uint16_t(1) << 2;
 
     struct RB_node {
-        uint32_t index;
+        B_type index;
         uint16_t offset;
-        uint16_t payload;
         uint16_t left_index;
         uint16_t right_index;
         uint16_t meta;
@@ -30,19 +29,19 @@ class RB_tree {
 
     void sort(B_type* buffer) {
         for (uint16_t i = 0; i < size; i++) {
-            insert(buffer[i].first, buffer[i].second);
+            insert(buffer[i]);
         }
         uint16_t i = 0;
         walk(root, i, buffer);
     }
 
-    void insert(uint32_t i, u_int16_t v) {
+    void insert(B_type i) {
         uint16_t loc = elems;
         if (elems == 0) [[unlikely]] {
-            nodes[elems++] = {i, 0, v, 0, 0, 0};
+            nodes[elems++] = {i, 0, 0, 0, 0};
             return;
         }
-        nodes[elems++] = {i, 0, v, 0, 0, RED};
+        nodes[elems++] = {i, 0, 0, 0, RED};
         int32_t res = increment(root, i, loc);
         if (res >= 0) {
             root = res;
@@ -59,14 +58,14 @@ class RB_tree {
     }
 
   private:
-    int32_t increment(uint16_t index, uint32_t v, uint16_t location) {
+    int32_t increment(uint16_t index, B_type v, uint16_t location) {
         RB_node* nd = nodes + index;
         nd->index += nd->offset;
         nodes[nd->left_index].offset += nd->meta & LEFT ? nd->offset : 0;
         nodes[nd->right_index].offset += nd->meta & RIGHT ? nd->offset : 0;
         nd->offset = 0;
         if (nd->index >= v) {
-            nd->index++;
+            ++nd->index;
             if (nd->meta & RIGHT) {
                 nodes[nd->right_index].offset += 1;
             }
@@ -145,8 +144,7 @@ class RB_tree {
             nodes[nd->left_index].offset += nd->offset;
             walk(nd->left_index, i, buffer);
         }
-        buffer[i].first = nd->index;
-        buffer[i++].second = nd->payload;
+        buffer[i++] = nd->index;
         if (nd->meta & RIGHT) {
             nodes[nd->right_index].offset += nd->offset;
             walk(nd->right_index, i, buffer);

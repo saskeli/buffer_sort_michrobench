@@ -12,9 +12,8 @@ template <uint16_t size, uint32_t n>
 class AVL_tree {
   private:
     struct AVL_node {
-        uint32_t index;
+        B_type index;
         uint16_t offset;
-        uint16_t payload;
         uint16_t left_index;
         uint16_t right_index;
         uint16_t left_height;
@@ -30,15 +29,15 @@ class AVL_tree {
 
     void sort(B_type* buffer) {
         for (uint16_t i = 0; i < size; i++) {
-            insert(buffer[i].first, buffer[i].second);
+            insert(buffer[i]);
         }
         uint16_t i = 0;
         walk(root, i, buffer);
     }
 
-    void insert(uint32_t i, uint16_t v) {
+    void insert(B_type i) {
         uint16_t loc = elems;
-        nodes[elems++] = {i, 0, v, 0, 0, 0, 0};
+        nodes[elems++] = {i, 0, 0, 0, 0, 0};
         if (elems == 1) [[unlikely]] {
             return;
         }
@@ -58,14 +57,14 @@ class AVL_tree {
     }
 
   private:
-    bool increment(uint32_t v, uint16_t loc, uint16_t idx) {
+    bool increment(B_type v, uint16_t loc, uint16_t idx) {
         AVL_node* nd = nodes + idx;
         nd->index += nd->offset;
         nodes[nd->left_index].offset += nd->left_height ? nd->offset : 0;
         nodes[nd->right_index].offset += nd->right_height ? nd->offset : 0;
         nd->offset = 0;
         if (nd->index >= v) {
-            nd->index++;
+            ++nd->index;
             if (nd->right_height) {
                 nodes[nd->right_index].offset += 1;
             }
@@ -108,8 +107,7 @@ class AVL_tree {
         if (nd->left_height) {
             walk(nd->left_index, i, buffer);
         }
-        buffer[i].first = nd->index;
-        buffer[i++].second = nd->payload;
+        buffer[i++] = nd->index;
         if (nd->right_height) {
             walk(nd->right_index, i, buffer);
         }

@@ -25,11 +25,11 @@ class S_tree {
         memset(segment_tree, 0, WORDS * sizeof(uint16_t));
         for (uint16_t i = size - 1; i < size; i--) {
             //bool print_b = false;
-            //if (buffer[i].first == 16359) {
+            //if (buffer[i] == 16359) {
             //    print();
             //    print_b = true;
             //}
-            buffer[i].first += update(buffer[i].first);
+            buffer[i] += update(buffer[i]);
             //if (print_b) {
             //    print();
             //}

@@ -33,7 +33,7 @@ class BV_sorter {
         memset(b_tree, 0, B_TREE_SIZE * sizeof(uint16_t));
         for (uint16_t i = buffer_size - 1; i < buffer_size; i--) {
             //std::cerr << "updating " << items[i] << " at " << i << std::endl;
-            buffer[i].first += update(buffer[i].first);
+            buffer[i] += update(buffer[i]);
             //print();
         }
         std::sort(buffer, buffer + buffer_size);
