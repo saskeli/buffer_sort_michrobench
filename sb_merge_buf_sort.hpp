@@ -41,7 +41,7 @@ class SB_merge_inversions {
    private:
     template <uint16_t block_size>
     void sort(B_type* source, B_type* target) {
-        if constexpr (block_size == 64) {
+        if constexpr (block_size <= 64) {
             for (uint64_t i = 0; i < buffer_size; i += block_size) {
                 bf_sort<block_size>(target + i);
             }
