@@ -1,5 +1,16 @@
 #!/bin/bash
 
+#SBATCH --job-name=buffer_sort
+#SBATCH -n 1
+#SBATCH -t 04:00:00
+#SBATCH --mem=20G
+#SBATCH --mail-type=END
+#SBATCH --mail-user=saska.donges@helsinki.fi
+#SBATCH -p short
+#SBATCH -M ukko
+#SBATCH --constraint=intel
+#SBATCH --exclusive
+
 source ~/venv/bin/activate
 
 for b in 8 16 32 64 128 256 512 1024
