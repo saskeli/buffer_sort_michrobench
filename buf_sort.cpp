@@ -11,9 +11,10 @@
 #include "block_buf_sort.hpp"
 #include "merge_inversions.hpp"
 #include "sb_merge_buf_sort.hpp"
+#include "inversion_then_merge_sort.hpp"
 
 #ifndef SET_BUFFER_SIZE
-#define SET_BUFFER_SIZE 512
+#define SET_BUFFER_SIZE 128
 #endif
 
 const static uint16_t BUFFER_SIZE = SET_BUFFER_SIZE;
@@ -51,17 +52,21 @@ double runner(uint64_t type, B_type* buffer) {
         return run_bench<Block_sort<BUFFER_SIZE, LIST_SIZE>>(buffer);
     } else if (type == 6) {
         return run_bench<Merge_inversions<BUFFER_SIZE, LIST_SIZE>>(buffer);
-    } else {
+    } else if (type == 7) {
         return run_bench<SB_merge_inversions<BUFFER_SIZE, LIST_SIZE>>(buffer);
+    } else {
+        return run_bench<inversion_then_merge_sort<BUFFER_SIZE, LIST_SIZE>>(buffer);
     }
 }
 
 int main(int argc, char const *argv[])
 {
     uint64_t type = 0;
-    if (argc > 1) {
-        std::sscanf(argv[1], "%lu", &type);
+    if (argc <= 1) {
+        std::cerr << "Type is required" << std::endl;;
+        return 1;
     }
+    std::sscanf(argv[1], "%lu", &type);
     uint32_t n;
     std::cin >> n;
 
@@ -74,7 +79,6 @@ int main(int argc, char const *argv[])
         }
         double t = runner(type, buffer);
         time += t;
-        std::cerr << t << std::endl;
     }
     std::cerr << "Mean time ns: " << time / n << std::endl;
 }
