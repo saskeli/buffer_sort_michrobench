@@ -1,7 +1,10 @@
 #include <iostream>
 #include <chrono>
+#include <array>
 
 #include "util.hpp"
+
+#include "papi.h"
 
 #include "avl_buf_sort.hpp"
 #include "rb_buf_sort.hpp"
@@ -20,6 +23,10 @@
 const static uint16_t BUFFER_SIZE = SET_BUFFER_SIZE;
 const static uint32_t LIST_SIZE = uint32_t(1) << 14;
 
+std::array<int, 5> events = {PAPI_TOT_CYC, PAPI_TOT_INS, PAPI_L1_DCM, PAPI_BR_MSP, PAPI_TLB_DM};
+std::array<long long, 5> counts;
+int event_set = PAPI_NULL;
+
 template<class DS>
 double run_bench(B_type* buffer) {
     DS sorter;
@@ -29,7 +36,9 @@ double run_bench(B_type* buffer) {
     using std::chrono::nanoseconds;
 
     auto t1 = high_resolution_clock::now();
+    PAPI_reset(event_set);
     sorter.sort(buffer);
+    PAPI_accum(event_set, counts.data());
     auto t2 = high_resolution_clock::now();
     for (uint16_t i = 0; i < BUFFER_SIZE; i++) {
         std::cout << buffer[i] << std::endl;
@@ -70,6 +79,27 @@ int main(int argc, char const *argv[])
     uint32_t n;
     std::cin >> n;
 
+    auto ret = PAPI_library_init(PAPI_VER_CURRENT);
+    if (ret != PAPI_VER_CURRENT) {
+        std::cerr << "PAPI initialization failed: " << ret << " != " << PAPI_VER_CURRENT << std::endl;
+        return 1;
+    }
+    ret = PAPI_create_eventset(&event_set);
+    if (ret != PAPI_OK) {
+        std::cerr << "PAPI event set creation failed" << std::endl;
+        return 1;
+    }
+    ret = PAPI_add_events(event_set, events.data(), events.size());
+    if (ret != PAPI_OK) {
+        std::cerr << "PAPI event registration failed" << std::endl;
+        return 1;
+    }
+    ret = PAPI_start(event_set);
+    if (ret != PAPI_OK) {
+        std::cerr << "PAPI instrumentation failed to start" << std::endl;
+        return 1;
+    }
+
     B_type buffer[BUFFER_SIZE];
     double time = 0;
     for (uint32_t i = 0; i < n; i++) {
@@ -81,4 +111,11 @@ int main(int argc, char const *argv[])
         time += t;
     }
     std::cerr << "Mean time ns: " << time / n << std::endl;
+
+    std::cerr << counts[0] << " cycles elapsed in test\n"
+              << counts[1] << " instructions were executed in test\n"
+              << double(counts[1]) / counts[0] << " instructions per cycle\n"
+              << counts[2] << " L1D misses\n"
+              << counts[3] << " Branch misspredictions\n"
+              << counts[4] << " TLB data misses" << std::endl;
 }

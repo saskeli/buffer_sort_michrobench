@@ -9,9 +9,9 @@ HEADERS = avl_buf_sort.hpp rb_buf_sort.hpp st_buf_sort.hpp bv_buf_sort.hpp \
 all: buf_sort
 
 buf_sort: buf_sort.cpp $(HEADERS)
-	g++ $(CFLAGS) -DNDEBUG -Ofast -o buf_sort buf_sort.cpp
+	g++ $(CFLAGS) -DNDEBUG -Ofast -I/${PAPI_DIR}/include -L/${PAPI_DIR}/lib -o buf_sort buf_sort.cpp -lpapi
 
 debug: buf_sort.cpp $(HEADERS)
-	g++ $(CFLAGS) -DDEBUG -O0 -g -o buf_sort buf_sort.cpp
+	g++ $(CFLAGS) -DDEBUG -O0 -g -I/${PAPI_DIR}/include -L/${PAPI_DIR}/lib -o buf_sort buf_sort.cpp -lpapi
 
 %.hpp:
