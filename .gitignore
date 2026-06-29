@@ -31,6 +31,10 @@ buf_sort
 *.exe
 *.out
 *.app
+profile
+bench
 
 # test files
 *.txt
+*.res
+*.prof

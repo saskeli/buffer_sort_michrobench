@@ -1,0 +1,6 @@
+[submodule "benchmark"]
+	path = benchmark
+	url = https://github.com/google/benchmark.git
+[submodule "counters"]
+	path = counters
+	url = https://github.com/saskeli/counters.git
